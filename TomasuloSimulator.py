@@ -64,11 +64,11 @@ class TomasuloSimulator():
                 self.setRegisterContent(inst[1],float(self.getRegisterContent(inst[2]))/float(inst[3]))
             elif(aux == "lw"):
                 self.setRegisterContent(inst[1],int(self.getMemoryContent(int(inst[2])+int(self.getRegisterContent(inst[3])))))
-            elif(aux == "l.d"):
+            elif(aux == "ld.d"):
                 self.setRegisterContent(inst[1],float(self.getMemoryContent(int(inst[2])+int(self.getRegisterContent(inst[3])))))
             elif(aux == "sw"):
                 self.setMemoryContent(int(inst[2])+int(self.getRegisterContent(inst[3])),int(self.getRegisterContent(inst[1])))
-            elif(aux == "s.d"):
+            elif(aux == "sd.d"):
                 self.setMemoryContent(int(inst[2])+int(self.getRegisterContent(inst[3])),float(self.getRegisterContent(inst[1])))
             else:
                 raise Exception("Invalid Instruction")
@@ -179,7 +179,7 @@ class TomasuloSimulator():
         aux = self.Instructions[inst][0].lower()
         self.UnitsState[unit][0] = "Yes"
         self.UnitsState[unit][1] = aux
-        if(aux == "lw" or aux == "l.d"):
+        if(aux == "lw" or aux == "ld.d"):
             state = self.getRegisterState(self.Instructions[inst][3])
             if(state == ""):
                 self.UnitsState[unit][2] = self.getRegisterContent(self.Instructions[inst][3])
@@ -191,7 +191,7 @@ class TomasuloSimulator():
             self.UnitsState[unit][5] = "-"
             self.UnitsState[unit][6] = int(self.Instructions[inst][2])
             self.setRegisterState(self.Instructions[inst][1],self.Units[unit][0][0])
-        elif(aux == "sw" or aux == "s.d"):
+        elif(aux == "sw" or aux == "sd.d"):
             state = self.getRegisterState(self.Instructions[inst][1])
             if(state == ""):
                 self.UnitsState[unit][2] = self.getRegisterContent(self.Instructions[inst][1])
@@ -231,6 +231,13 @@ class TomasuloSimulator():
                 self.UnitsState[unit][5] = "-"
             self.setRegisterState(self.Instructions[inst][1],self.Units[unit][0][0])
     def writeBack(self,unit,value):
+        self.UnitsState[unit][0] = "No"
+        self.UnitsState[unit][1] = ""
+        self.UnitsState[unit][2] = ""
+        self.UnitsState[unit][3] = ""
+        self.UnitsState[unit][4] = ""
+        self.UnitsState[unit][5] = ""
+        self.UnitsState[unit][6] = ""
         if(value == None):
             return
         for reg in range(len(self.RegistersState)):
@@ -238,17 +245,17 @@ class TomasuloSimulator():
                 self.RegistersState[reg] = ""
                 self.Registers[reg][1] = value
         for uni in self.UnitsState:
-            if(uni[4] == self.Units[unit][0]):
+            if(uni[4] == self.Units[unit][0][0]):
                 uni[2] = value
                 uni[4] = "-"
-            if(uni[5] == self.Units[unit][0]):
+            if(uni[5] == self.Units[unit][0][0]):
                 uni[3] = value
                 uni[5] = "-"
     def simulate(self):
         if(self.ended == len(self.Instructions)):
             raise Exception("Already at end")
         flag = False
-        unitsToRelease = []
+        writeBacksToBeDone = []
         finished = 0
         for inst in range(len(self.Instructions)):
             if(self.InstructionsState[inst][0] == ""):
@@ -267,30 +274,27 @@ class TomasuloSimulator():
                 if(self.UnitsState[aux][4] == self.UnitsState[aux][5] == "-"):
                     self.InstructionsState[inst][1] = self.CurrentClock
                     i = self.Instructions[inst][0].lower()
-                    if(i == "sw" or i=="s.d"):
+                    if(i == "sw" or i=="sd.d"):
                         self.UnitsState[aux][6] += int(self.UnitsState[aux][3])
-                    elif(i == "lw" or i =="l.d"):
+                    elif(i == "lw" or i =="ld.d"):
                         self.UnitsState[aux][6] += int(self.UnitsState[aux][2])
+                    if(self.getLatency(aux,self.Units[aux][1][0]) == 1):
+                        self.InstructionsState[inst][2] = self.CurrentClock
             elif(self.InstructionsState[inst][2] == ""):
                 aux = self.Instructions[inst][4]
-                if(self.InstructionsState[inst][1]+self.getLatency(aux,self.Units[aux][1][0]) == self.CurrentClock):
+                if(self.InstructionsState[inst][1]-1+self.getLatency(aux,self.Units[aux][1][0]) == self.CurrentClock):
                     self.InstructionsState[inst][2] = self.CurrentClock
             elif(self.InstructionsState[inst][3] == ""):
                 aux = self.Instructions[inst][4]
-                self.writeBack(aux,self.execute(inst,self.UnitsState[aux][2],self.UnitsState[aux][3],self.UnitsState[aux][6]))
-                unitsToRelease.append(aux)
+                writeBacksToBeDone.append([aux,self.execute(inst,self.UnitsState[aux][2],self.UnitsState[aux][3],self.UnitsState[aux][6])])
+                #self.writeBack(aux,self.execute(inst,self.UnitsState[aux][2],self.UnitsState[aux][3],self.UnitsState[aux][6]))
+                #unitsToRelease.append(aux)
                 self.InstructionsState[inst][3] = self.CurrentClock
                 self.ended += 1
         if(flag):
             self.NextInstruction += 1
-        for units in unitsToRelease:
-            self.UnitsState[units][0] = "No"
-            self.UnitsState[units][1] = ""
-            self.UnitsState[units][2] = ""
-            self.UnitsState[units][3] = ""
-            self.UnitsState[units][4] = ""
-            self.UnitsState[units][5] = ""
-            self.UnitsState[units][6] = ""
+        for i in writeBacksToBeDone:
+            self.writeBack(i[0],i[1])
         self.CurrentClock += 1
     def simulateTo(self,target):
         if target <= 0:
@@ -329,7 +333,7 @@ class TomasuloSimulator():
             return value1//value2
         elif(aux == "div.d" or aux == "divi.d"):
             return value1/value2
-        elif(aux == "lw" or aux == "l.d"):
+        elif(aux == "lw" or aux == "ld.d"):
             return self.getMemoryContent(value3)
-        elif(aux == "sw" or aux == "s.d"):
+        elif(aux == "sw" or aux == "sd.d"):
             self.setMemoryContent(value3,value1)

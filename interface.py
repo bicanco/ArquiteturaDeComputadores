@@ -46,10 +46,10 @@ class MainWindow(wx.Panel):
         self.table3.AppendColumn("UF")
         self.table3.AppendColumn("Busy")
         self.table3.AppendColumn("Op")
-        self.table3.AppendColumn("Qj")
-        self.table3.AppendColumn("Qk")
         self.table3.AppendColumn("Vj")
         self.table3.AppendColumn("Vk")
+        self.table3.AppendColumn("Qj")
+        self.table3.AppendColumn("Qk")
         self.table3.AppendColumn("A")
 
         #Main Memory table
