@@ -15,15 +15,12 @@ class TomasuloSimulator():
                 else:
                     aux.append([k[0],k[1]])
             self.Units.append(aux)
-            self.UnitsState.append(["No","","","","","",""])
-        NInst = int(lines[NUnits])
-        lines = lines[NUnits+1:len(lines)]
+        lines = lines[NUnits:len(lines)]
         self.Instructions = []
         self.InstructionsState = []
         self.Memory = []
         self.Registers = []
         self.RegistersState = []
-        self.CurrentClock = 0
         for i in lines:
             aux=i.split(",")
             if(len(aux) != 4):
@@ -31,7 +28,6 @@ class TomasuloSimulator():
             self.Instructions.append(aux)
         self.preProcessing()
     def preProcessing(self):
-#        self.Registers = [["R0",0],["R1",10],["R2",20],["R3",30],["R4",40],["R5",50],["R6",60],["R7",70],["R8",80],["R9",90],["D0",0.0],["D1",10.0],["D2",20.0],["D3",30.0],["D4",40.0],["D5",50.0],["D6",60.0],["D7",70.0],["D8",80.0],["D9",90.0]]
         for inst in self.Instructions:
             aux = inst[0].lower()
             if(aux == "add"):
@@ -74,19 +70,19 @@ class TomasuloSimulator():
                 self.setMemoryContent(int(inst[2])+int(self.getRegisterContent(inst[3])),int(self.getRegisterContent(inst[1])))
             elif(aux == "s.d"):
                 self.setMemoryContent(int(inst[2])+int(self.getRegisterContent(inst[3])),float(self.getRegisterContent(inst[1])))
-            # elif(aux == "jump"):
-            #     continue
             else:
                 raise Exception("Invalid Instruction")
-            self.InstructionsState.append(["","","",""])
-        for reg in self.Registers:
-            if reg[0][0].lower() == "r":
-                reg[1] = int(reg[0][1])*10
-            else:
-                reg[1] = float(reg[0][1])*10.0
-            self.RegistersState.append("")
-        for mem in self.Memory:
-            mem[1] = mem[0]
+            flag = True
+            for unit in self.Units:
+                for i in range(1,len(unit)):
+                    if(unit[i][0].lower() == aux):
+                        flag = False
+                        break
+                if(not flag):
+                    break
+            if(flag):
+                raise Exception("Functional Unit Missing")
+        self.clean()
         self.Registers.sort()
         self.Memory.sort()
     def getRegisterContent(self,reg):
@@ -114,6 +110,15 @@ class TomasuloSimulator():
             self.Registers.append([reg.upper(),content*1.0])
         else:
             raise Exception("Invalid Register")
+    def getRegisterState(self,reg):
+        for regs in range(len(self.Registers)):
+            if(self.Registers[regs][0] == reg.upper()):
+                return self.RegistersState[regs]
+    def setRegisterState(self,reg,state):
+        for regs in range(len(self.Registers)):
+            if(self.Registers[regs][0] == reg.upper()):
+                self.RegistersState[regs] = state
+                return
     def getMemoryContent(self,address):
         for i in self.Memory:
             if(i[0] == address):
@@ -133,10 +138,6 @@ class TomasuloSimulator():
         list = []
         for i in range(len(self.Instructions)):
             aux = [self.Instructions[i][0]+","+self.Instructions[i][1]+","+self.Instructions[i][2]+","+self.Instructions[i][3]]
-            # aux.append(self.InstructionsState[i][0])
-            # aux.append(self.InstructionsState[i][1])
-            # aux.append(self.InstructionsState[i][2])
-            # aux.append(self.InstructionsState[i][3])
             aux += self.InstructionsState[i]
             list.append(aux)
         return list
@@ -159,6 +160,10 @@ class TomasuloSimulator():
         return list
     def getUnits(self):
         return self.UnitsState
+    def getLatency(self,unit,op):
+        for ops in self.Units[unit]:
+            if(op == ops[0].lower()):
+                return int(ops[1])
     def getInicialMemory(self):
         list = []
         for i in self.Memory:
@@ -169,10 +174,162 @@ class TomasuloSimulator():
         for i in self.Memory:
             list.append(i[1])
         return list
-    # def nextStep(self):
-    #     self.CurrentClock += 1
-    #     self.RegistersState[0] = "oi"
-    #     self.Registers[0][1] = 30
-    #     self.UnitsState[0][0] = "Yes"
-    #     self.Memory[0][1] = 100
-    #     self.InstructionsState[0][0] = 10
+    def dispacth(self,unit,inst):
+        self.InstructionsState[inst][0] = self.CurrentClock
+        aux = self.Instructions[inst][0].lower()
+        self.UnitsState[unit][0] = "Yes"
+        self.UnitsState[unit][1] = aux
+        if(aux == "lw" or aux == "l.d"):
+            state = self.getRegisterState(self.Instructions[inst][3])
+            if(state == ""):
+                self.UnitsState[unit][2] = self.getRegisterContent(self.Instructions[inst][3])
+                self.UnitsState[unit][4] = "-"
+            else:
+                self.UnitsState[unit][2] = "-"
+                self.UnitsState[unit][4] = state
+            self.UnitsState[unit][3] = "-"
+            self.UnitsState[unit][5] = "-"
+            self.UnitsState[unit][6] = int(self.Instructions[inst][2])
+            self.setRegisterState(self.Instructions[inst][1],self.Units[unit][0][0])
+        elif(aux == "sw" or aux == "s.d"):
+            state = self.getRegisterState(self.Instructions[inst][1])
+            if(state == ""):
+                self.UnitsState[unit][2] = self.getRegisterContent(self.Instructions[inst][1])
+                self.UnitsState[unit][4] = "-"
+            else:
+                self.UnitsState[unit][2] = "-"
+                self.UnitsState[unit][4] = state
+            state = self.getRegisterState(self.Instructions[inst][3])
+            if(state == ""):
+                self.UnitsState[unit][3] = self.getRegisterContent(self.Instructions[inst][3])
+                self.UnitsState[unit][5] = "-"
+            else:
+                self.UnitsState[unit][3] = "-"
+                self.UnitsState[unit][5] = state
+            self.UnitsState[unit][6] = int(self.Instructions[inst][2])
+        else:
+            state = self.getRegisterState(self.Instructions[inst][2])
+            if(state == ""):
+                self.UnitsState[unit][2] = self.getRegisterContent(self.Instructions[inst][2])
+                self.UnitsState[unit][4] = "-"
+            else:
+                self.UnitsState[unit][2] = "-"
+                self.UnitsState[unit][4] = state
+            if(aux == "add" or aux =="add.d" or aux == "sub" or aux == "sub.d" or aux == "mult" or aux == "mult.d" or aux == "div" or aux == "div.d"):
+                state = self.getRegisterState(self.Instructions[inst][3])
+                if(state == ""):
+                    self.UnitsState[unit][3] = self.getRegisterContent(self.Instructions[inst][3])
+                    self.UnitsState[unit][5] = "-"
+                else:
+                    self.UnitsState[unit][3] = "-"
+                    self.UnitsState[unit][5] = state
+            elif(aux == "addi" or aux == "subi" or aux == "multi" or aux == "divi"):
+                self.UnitsState[unit][3] = int(self.Instructions[inst][3])
+                self.UnitsState[unit][5] = "-"
+            else:
+                self.UnitsState[unit][3] = float(self.Instructions[inst][3])
+                self.UnitsState[unit][5] = "-"
+            self.setRegisterState(self.Instructions[inst][1],self.Units[unit][0][0])
+    def writeBack(self,unit,value):
+        if(value == None):
+            return
+        for reg in range(len(self.RegistersState)):
+            if(self.Units[unit][0][0] == self.RegistersState[reg]):
+                self.RegistersState[reg] = ""
+                self.Registers[reg][1] = value
+        for uni in self.UnitsState:
+            if(uni[4] == self.Units[unit][0]):
+                uni[2] = value
+                uni[4] = "-"
+            if(uni[5] == self.Units[unit][0]):
+                uni[3] = value
+                uni[5] = "-"
+    def simulate(self):
+        if(self.ended == len(self.Instructions)):
+            raise Exception("Already at end")
+        flag = False
+        unitsToRelease = []
+        finished = 0
+        for inst in range(len(self.Instructions)):
+            if(self.InstructionsState[inst][0] == ""):
+                if(self.NextInstruction == inst):
+                    for unit in range(len(self.Units)):
+                        for i in range(1,len(self.Units[unit])):
+                            if(self.Units[unit][i][0].lower() == self.Instructions[inst][0].lower() and self.UnitsState[unit][0] == "No"):
+                                flag = True
+                                self.Instructions[inst].append(unit)
+                                break
+                        if(flag):
+                            self.dispacth(unit,inst)
+                            break
+            elif(self.InstructionsState[inst][1] == ""):
+                aux = self.Instructions[inst][4]
+                if(self.UnitsState[aux][4] == self.UnitsState[aux][5] == "-"):
+                    self.InstructionsState[inst][1] = self.CurrentClock
+                    i = self.Instructions[inst][0].lower()
+                    if(i == "sw" or i=="s.d"):
+                        self.UnitsState[aux][6] += int(self.UnitsState[aux][3])
+                    elif(i == "lw" or i =="l.d"):
+                        self.UnitsState[aux][6] += int(self.UnitsState[aux][2])
+            elif(self.InstructionsState[inst][2] == ""):
+                aux = self.Instructions[inst][4]
+                if(self.InstructionsState[inst][1]+self.getLatency(aux,self.Units[aux][1][0]) == self.CurrentClock):
+                    self.InstructionsState[inst][2] = self.CurrentClock
+            elif(self.InstructionsState[inst][3] == ""):
+                aux = self.Instructions[inst][4]
+                self.writeBack(aux,self.execute(inst,self.UnitsState[aux][2],self.UnitsState[aux][3],self.UnitsState[aux][6]))
+                unitsToRelease.append(aux)
+                self.InstructionsState[inst][3] = self.CurrentClock
+                self.ended += 1
+        if(flag):
+            self.NextInstruction += 1
+        for units in unitsToRelease:
+            self.UnitsState[units][0] = "No"
+            self.UnitsState[units][1] = ""
+            self.UnitsState[units][2] = ""
+            self.UnitsState[units][3] = ""
+            self.UnitsState[units][4] = ""
+            self.UnitsState[units][5] = ""
+            self.UnitsState[units][6] = ""
+        self.CurrentClock += 1
+    def simulateTo(self,target):
+        if target <= 0:
+            raise Exception("Already at start")
+        self.clean()
+        for i in range(target-1):
+            self.simulate()
+    def clean(self):
+        self.ended = 0
+        self.NextInstruction = 0
+        self.CurrentClock = 0
+        self.UnitsState.clear()
+        self.InstructionsState.clear()
+        self.RegistersState.clear()
+        for i in self.Units:
+            self.UnitsState.append(["No","","","","","",""])
+        for i in self.Instructions:
+            self.InstructionsState.append(["","","",""])
+        for reg in self.Registers:
+            if reg[0][0].lower() == "r":
+                reg[1] = int(reg[0][1])*10
+            else:
+                reg[1] = float(int(reg[0][1]))*10.0
+            self.RegistersState.append("")
+        for mem in self.Memory:
+            mem[1] = mem[0]
+    def execute(self,inst,value1,value2,value3):
+        aux = self.Instructions[inst][0].lower()
+        if(aux == "add" or aux == "add.d" or aux == "addi" or aux == "addi.d"):
+            return value1 + value2
+        elif(aux == "sub" or aux == "sub.d" or aux == "subi" or aux == "subi.d"):
+            return value1 - value2
+        elif(aux == "mult" or aux == "mult.d" or aux == "multi" or aux == "multi.d"):
+            return value1 * value2
+        elif(aux == "div" or aux == "divi"):
+            return value1//value2
+        elif(aux == "div.d" or aux == "divi.d"):
+            return value1/value2
+        elif(aux == "lw" or aux == "l.d"):
+            return self.getMemoryContent(value3)
+        elif(aux == "sw" or aux == "s.d"):
+            self.setMemoryContent(value3,value1)

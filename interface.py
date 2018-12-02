@@ -60,7 +60,9 @@ class MainWindow(wx.Panel):
 
         #next button
         nextButton = wx.Button(self,label="Next",pos=(50,530))
+        previousButton = wx.Button(self,label="Previous",pos=(150,530))
         parent.Bind(wx.EVT_BUTTON,self.update,nextButton)
+        parent.Bind(wx.EVT_BUTTON,self.outdate,previousButton)
     def loadFile(self,event):
         chooseFile = wx.FileDialog(self)
         if chooseFile.ShowModal() == wx.ID_OK:
@@ -109,30 +111,44 @@ class MainWindow(wx.Panel):
             self.table4.AppendColumn(str(i))
         list = self.simulator.getMemory()
         self.table4.Append(["Content"]+list)
+    def outdate(self,event):
+        if(self.initialized):
+            try:
+                self.simulator.simulateTo(self.simulator.getCurrentClock())
+            except Exception as e:
+                message = wx.MessageDialog(self,str(e))
+                message.ShowModal()
+            self.clock.SetLabel(str(self.simulator.getCurrentClock()))
+            self.updateTables()
     def update(self,event):
         if(self.initialized):
-            # self.simulator.nextStep()
+            try:
+                self.simulator.simulate()
+            except Exception as e:
+                message = wx.MessageDialog(self,str(e))
+                message.ShowModal()
             self.clock.SetLabel(str(self.simulator.getCurrentClock()))
-            list = self.simulator.getInstructions()
-            #list = [[0,1,2,3]]
-            for i in range(len(list)):
-                for j in range(4):
-                    self.table1.SetItem(i,j+1,str(list[i][j]))
-            list = self.simulator.getRegisters()
-            #list = [[0],[0]]
-            for i in range(len(list)):
-                for j in range(len(list[i])):
-                    self.table2.SetItem(i,j+1,str(list[i][j]))
-            list = self.simulator.getUnits()
-            #list = [[0,1,2,3,4,5,6,7]]
-            for i in range(len(list)):
-                for j in range(7):
-                    self.table3.SetItem(i,j+1,str(list[i][j]))
-            list = self.simulator.getMemory()
-            #list = [0]
-            for i in range(len(list)):
-                self.table4.SetItem(0,i+1,str(list[i]))
-
+            self.updateTables()
+    def updateTables(self):
+        list = self.simulator.getInstructions()
+        #list = [[0,1,2,3]]
+        for i in range(len(list)):
+            for j in range(4):
+                self.table1.SetItem(i,j+1,str(list[i][j]))
+        list = self.simulator.getRegisters()
+        #list = [[0],[0]]
+        for i in range(len(list)):
+            for j in range(len(list[i])):
+                self.table2.SetItem(i,j+1,str(list[i][j]))
+        list = self.simulator.getUnits()
+        #list = [[0,1,2,3,4,5,6,7]]
+        for i in range(len(list)):
+            for j in range(7):
+                self.table3.SetItem(i,j+1,str(list[i][j]))
+        list = self.simulator.getMemory()
+        #list = [0]
+        for i in range(len(list)):
+            self.table4.SetItem(0,i+1,str(list[i]))
 app = wx.App(True)
 frame = wx.Frame(None,title="Tomasulo's algorithm simulator",size=(800,640))
 panel = MainWindow(frame)
