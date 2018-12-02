@@ -1,5 +1,6 @@
 import wx as wx
 import os as os
+import TomasuloSimulator as tss
 
 class MainWindow(wx.Panel):
     def __init__(self,parent):
@@ -25,7 +26,8 @@ class MainWindow(wx.Panel):
 
         #Instructions' State table
         self.table1Title = wx.StaticText(self,label="Instructions' State",pos=(50,140))
-        self.table1 = wx.ListCtrl(self,name="instructions'State",style=wx.LC_REPORT,pos=(50,160),size=(320,150))
+        self.table1 = wx.ListCtrl(self,name="instructions'State",style=wx.LC_REPORT,pos=(50,160),size=(400,150))
+        self.table1.AppendColumn("Instruction")
         self.table1.AppendColumn("IF")
         self.table1.AppendColumn("EX start")
         self.table1.AppendColumn("EX end")
@@ -33,8 +35,9 @@ class MainWindow(wx.Panel):
 
         #Registers' State table
         self.table2Title = wx.StaticText(self,label="Registers' State",pos=(450,30))
-        self.table2 = wx.ListCtrl(self,name="registers'State",style=wx.LC_REPORT,pos=(450,50),size=(300,70))
+        self.table2 = wx.ListCtrl(self,name="registers'State",style=wx.LC_REPORT,pos=(450,50),size=(300,75))
         self.table2.AppendColumn("Registers")
+        self.table2.Append(["Content"])
         self.table2.Append(["Qi"])
 
         #Functional Units table
@@ -61,63 +64,72 @@ class MainWindow(wx.Panel):
     def loadFile(self,event):
         chooseFile = wx.FileDialog(self)
         if chooseFile.ShowModal() == wx.ID_OK:
-            #self.simulator = TSsimulator(os.path.join(chooseFile.GetDirectory,chooseFile.GetFilename()))
-            self.initialized = True
-            self.startTables()
-        chooseFile.Destroy()
+            try:
+                self.simulator = tss.TomasuloSimulator(os.path.join(chooseFile.GetDirectory(),chooseFile.GetFilename()))
+                self.initialized = True
+                self.startTables()
+            except ValueError:
+                message = wx.MessageDialog(self,"Invalid Value")
+                message.ShowModal()
+            except Exception as e:
+                message = wx.MessageDialog(self,str(e))
+                message.ShowModal()
+        #chooseFile.Destroy()
     def exit(self,event):
         exit()
     def startTables(self):
         self.clock.SetLabel("0")
-        #list = self.simulator.instructions()
+        list = self.simulator.getInicialInstructions()
         self.table1.DeleteAllItems()
-        list = [[0,0,0,0]]
+        #list = [["add.d,D1,D2,D3",0,0,0,0]]
         for i in list:
             self.table1.Append(i)
-        #list = self.simulator.register()
+        list = self.simulator.getInicialRegisters()
         self.table2.ClearAll()
         self.table2.AppendColumn("Registers")
-        list =[""]
+        #list =[""]
         for i in list:
             self.table2.AppendColumn(i)
-        #list = self.simulator.registerStates()
-        list = [0]
-        list = ["Qi"]+list
-        self.table2.Append(list)
-        #list = self.simulator.units()
+        list = self.simulator.getRegisters()
+        #list = [0]
+        #list1 = ["Content"]+list
+        self.table2.Append(["Content"]+list[0])
+        #list2 = ["Qi"]+list
+        self.table2.Append(["Qi"]+list[1])
+        list = self.simulator.getInicialUnits()
         self.table3.DeleteAllItems()
-        list = [[0,0,0,0,0,0,0,0]]
+        #list = [[0,0,0,0,0,0,0,0]]
         for i in list:
             self.table3.Append(i)
-        #list = self.simulator.memory()
+        list = self.simulator.getInicialMemory()
         self.table4.ClearAll()
         self.table4.AppendColumn("Memory Address")
-        list = [""]
+        #list = [""]
         for i in list:
-            self.table4.AppendColumn(i)
-        #list = self.simulator.memoryStates()
-        list = ["Content"]+list
-        self.table4.Append(list)
+            self.table4.AppendColumn(str(i))
+        list = self.simulator.getMemory()
+        self.table4.Append(["Content"]+list)
     def update(self,event):
         if(self.initialized):
-            #self.simulator.nextStep()
-            #self.clock.SetLabel(str(self.simulator.currentClock()))
-            #list = self.simulator.instructions()
-            list = [[0,1,2,3]]
+            # self.simulator.nextStep()
+            self.clock.SetLabel(str(self.simulator.getCurrentClock()))
+            list = self.simulator.getInstructions()
+            #list = [[0,1,2,3]]
             for i in range(len(list)):
                 for j in range(4):
-                    self.table1.SetItem(i,j,str(list[i][j]))
-            #list = self.simulator.registerStates()
-            list = [0]
+                    self.table1.SetItem(i,j+1,str(list[i][j]))
+            list = self.simulator.getRegisters()
+            #list = [[0],[0]]
             for i in range(len(list)):
-                self.table2.SetItem(0,i+1,str(list[i]))
-            #list = self.simulator.units()
-            list = [[0,1,2,3,4,5,6,7]]
+                for j in range(len(list[i])):
+                    self.table2.SetItem(i,j+1,str(list[i][j]))
+            list = self.simulator.getUnits()
+            #list = [[0,1,2,3,4,5,6,7]]
             for i in range(len(list)):
-                for j in range(8):
-                    self.table3.SetItem(i,j,str(list[i][j]))
-            #list = self.simulator.memoryStates()
-            list = [0]
+                for j in range(7):
+                    self.table3.SetItem(i,j+1,str(list[i][j]))
+            list = self.simulator.getMemory()
+            #list = [0]
             for i in range(len(list)):
                 self.table4.SetItem(0,i+1,str(list[i]))
 
