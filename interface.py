@@ -10,9 +10,9 @@ class MainWindow(wx.Panel):
 
         #Menu Bar creation
         menu = wx.Menu()
-        loadFile = wx.MenuItem(menu,-1,text="Load File",helpString="teste")
+        loadFile = wx.MenuItem(menu,-1,text="Load File",helpString="Load File")
         menu.Append(loadFile)
-        exit = wx.MenuItem(menu,-1,text="Exit",helpString="test")
+        exit = wx.MenuItem(menu,-1,text="Exit",helpString="Exit")
         menu.Append(exit)
         menuBar = wx.MenuBar()
         menuBar.Append(menu,"File")
