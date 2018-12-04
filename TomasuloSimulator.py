@@ -27,6 +27,7 @@ class TomasuloSimulator():
                 raise Exception("Invalid Instruction")
             self.Instructions.append(aux)
         self.preProcessing()
+        f.close()
     def preProcessing(self):
         for inst in self.Instructions:
             aux = inst[0].lower()
@@ -91,9 +92,9 @@ class TomasuloSimulator():
                 return i[1]
         type = reg[0].lower()
         if(type == "r"):
-            aux = int(reg[1])*10
+            aux = int(reg[1:len(reg)])*10
         elif(type == "d"):
-            aux = float(int(reg[1]))*10.0
+            aux = float(int(reg[1:len(reg)]))*10.0
         else:
             raise Exception("Invalid Register")
         self.Registers.append([reg.upper(),aux])
@@ -287,8 +288,6 @@ class TomasuloSimulator():
             elif(self.InstructionsState[inst][3] == ""):
                 aux = self.Instructions[inst][4]
                 writeBacksToBeDone.append([aux,self.execute(inst,self.UnitsState[aux][2],self.UnitsState[aux][3],self.UnitsState[aux][6])])
-                #self.writeBack(aux,self.execute(inst,self.UnitsState[aux][2],self.UnitsState[aux][3],self.UnitsState[aux][6]))
-                #unitsToRelease.append(aux)
                 self.InstructionsState[inst][3] = self.CurrentClock
                 self.ended += 1
         if(flag):
@@ -315,9 +314,9 @@ class TomasuloSimulator():
             self.InstructionsState.append(["","","",""])
         for reg in self.Registers:
             if reg[0][0].lower() == "r":
-                reg[1] = int(reg[0][1])*10
+                reg[1] = int(reg[0][1:len(reg[0])])*10
             else:
-                reg[1] = float(int(reg[0][1]))*10.0
+                reg[1] = float(int(reg[0][1:len(reg[0])]))*10.0
             self.RegistersState.append("")
         for mem in self.Memory:
             mem[1] = mem[0]

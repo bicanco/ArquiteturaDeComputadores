@@ -1,6 +1,7 @@
-import wx as wx
-import os as os
+import wx
+import os
 import TomasuloSimulator as tss
+import sys
 
 class MainWindow(wx.Panel):
     def __init__(self,parent):
@@ -76,37 +77,29 @@ class MainWindow(wx.Panel):
             except Exception as e:
                 message = wx.MessageDialog(self,str(e))
                 message.ShowModal()
-        #chooseFile.Destroy()
     def exit(self,event):
-        exit()
+        sys.exit()
     def startTables(self):
         self.clock.SetLabel("0")
         list = self.simulator.getInicialInstructions()
         self.table1.DeleteAllItems()
-        #list = [["add.d,D1,D2,D3",0,0,0,0]]
         for i in list:
             self.table1.Append(i)
         list = self.simulator.getInicialRegisters()
         self.table2.ClearAll()
         self.table2.AppendColumn("Registers")
-        #list =[""]
         for i in list:
             self.table2.AppendColumn(i)
         list = self.simulator.getRegisters()
-        #list = [0]
-        #list1 = ["Content"]+list
         self.table2.Append(["Content"]+list[0])
-        #list2 = ["Qi"]+list
         self.table2.Append(["Qi"]+list[1])
         list = self.simulator.getInicialUnits()
         self.table3.DeleteAllItems()
-        #list = [[0,0,0,0,0,0,0,0]]
         for i in list:
             self.table3.Append(i)
         list = self.simulator.getInicialMemory()
         self.table4.ClearAll()
         self.table4.AppendColumn("Memory Address")
-        #list = [""]
         for i in list:
             self.table4.AppendColumn(str(i))
         list = self.simulator.getMemory()
@@ -131,22 +124,18 @@ class MainWindow(wx.Panel):
             self.updateTables()
     def updateTables(self):
         list = self.simulator.getInstructions()
-        #list = [[0,1,2,3]]
         for i in range(len(list)):
             for j in range(4):
                 self.table1.SetItem(i,j+1,str(list[i][j]))
         list = self.simulator.getRegisters()
-        #list = [[0],[0]]
         for i in range(len(list)):
             for j in range(len(list[i])):
                 self.table2.SetItem(i,j+1,str(list[i][j]))
         list = self.simulator.getUnits()
-        #list = [[0,1,2,3,4,5,6,7]]
         for i in range(len(list)):
             for j in range(7):
                 self.table3.SetItem(i,j+1,str(list[i][j]))
         list = self.simulator.getMemory()
-        #list = [0]
         for i in range(len(list)):
             self.table4.SetItem(0,i+1,str(list[i]))
 app = wx.App(True)
