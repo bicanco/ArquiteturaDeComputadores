@@ -1,0 +1,12 @@
+4
+LDU1;lw,2;sw,2
+LDU2;lw,2;sw,2
+ALU1;add,1;addi,1
+ALU2;add,1;addi,1
+lw,R2,0,R4
+addi,R2,R2,10
+lw,R3,4,R4
+addi,R3,R3,20
+add,R5,R2,R3
+sw,R5,8,R4
+addi,R4,R4,4
