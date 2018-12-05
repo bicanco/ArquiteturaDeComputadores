@@ -10,7 +10,7 @@ Instalação da biblioteca [wkPython](https://wxpython.org/)
 
 As seguintes instruções e operações foram definidas:
 
-*add: operação de soma dos dois registradores inteiros passados por último, armazenando o resultado no primeiro registrador passado. Formato da instrução: add,r1,r2,r3
+* add: operação de soma dos dois registradores inteiros passados por último, armazenando o resultado no primeiro registrador passado. Formato da instrução: add,r1,r2,r3
 
 *add.d: operação de soma dos dois registradores de ponto flutuante passados por último, armazenando o resultado no primeiro registrador passado. Formato da instrução: add.d,d1,d2,d3
 
